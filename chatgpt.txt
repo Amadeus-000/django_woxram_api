@@ -1,0 +1,5 @@
+https://chat.openai.com/share/ee49f5c5-dd45-4d8c-8a3b-f9109fff7f9d
+
+django-admin startproject myproject .
+
+docker compose up -d

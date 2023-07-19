@@ -1,0 +1,13 @@
+Django===3.1.7
+gunicorn
+beautifulsoup4
+django-cors-headers
+djangorestframework
+ginza
+ja-ginza
+ja-sentence-segmenter
+jaconv
+selenium
+spacy
+
+# python==3.8.8
