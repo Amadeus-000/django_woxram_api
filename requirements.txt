@@ -3,11 +3,14 @@ gunicorn
 beautifulsoup4
 django-cors-headers
 djangorestframework
+django-extensions
 ginza
 ja-ginza
 ja-sentence-segmenter
 jaconv
 selenium
 spacy
+webdriver-manager
+git+https://github.com/Amadeus-000/Amadeus.git
 
 # python==3.8.8
