@@ -18,6 +18,11 @@ services:
       - "80:80"
     depends_on:
       - django
+  certbot:
+    image: certbot/certbot
+    volumes:
+      - ./data/certbot/conf:/etc/letsencrypt
+      - ./data/certbot/www:/var/www/certbot
 
 volumes:
   static-volume:
