@@ -25,7 +25,7 @@ SECRET_KEY = 'xvvjb#_xhr^f@o93w)n04sa-friy&gmv(m7xy%*q_n5o@4!g^p'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['woxram-api.com']
 
 
 # Application definition
