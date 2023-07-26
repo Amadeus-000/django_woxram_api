@@ -25,7 +25,7 @@ SECRET_KEY = 'xvvjb#_xhr^f@o93w)n04sa-friy&gmv(m7xy%*q_n5o@4!g^p'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['woxram-api.com']
+ALLOWED_HOSTS = ['woxram-api.com','localhost']
 
 
 # Application definition
@@ -43,6 +43,7 @@ INSTALLED_APPS = [
     'api1',
     'app1',
     'account',
+    'db_transport',
 ]
 
 MIDDLEWARE = [
@@ -79,10 +80,24 @@ WSGI_APPLICATION = 'django_woxram_api.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/3.1/ref/settings/#databases
 
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.sqlite3',
+#         'NAME': BASE_DIR / 'db.sqlite3',
+#     }
+# }
+
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'ENGINE': 'django.db.backends.mysql',
+        'NAME': 'mydatabase',
+        'USER': 'ocelot',
+        'PASSWORD': 'dokupe',
+        'HOST': 'db',  # Dockerのサービス名を指定
+        'PORT': '3306',
+        'OPTIONS': {
+            'charset': 'utf8mb4',
+        },
     }
 }
 

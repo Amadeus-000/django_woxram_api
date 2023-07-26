@@ -11,6 +11,7 @@ jaconv
 selenium
 spacy
 webdriver-manager
+mysqlclient
 git+https://github.com/Amadeus-000/Amadeus.git
 
 # python==3.8.8

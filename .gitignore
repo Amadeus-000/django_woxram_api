@@ -1,2 +1,6 @@
 db.sqlite3
 data/
+account/migrations/
+api1/migrations/
+app1/migrations/
+db_transport/migrations/

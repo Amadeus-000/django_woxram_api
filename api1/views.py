@@ -10,7 +10,7 @@ from django.shortcuts import render
 
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from app1.models import CircleModel, CharacterVoiceModel, ScenarioWriterModel, VoiceDataModel, OrderMenu, SearchLog
+from app1.models import CircleModel, CharacterVoiceModel, ScenarioWriterModel, VoiceDataModel, SearchLog
 from account.models import MemoData
 from .models import SearchExample
 
@@ -112,7 +112,7 @@ class WorkInfoSearch:
     def __init__(self,dlsite_sch=False):
         # self.queryset=VoiceDataModel.objects.all()
         self.queryset=VoiceDataModel.objects.defer('maintext_old','genres','confidence','maintext_original','description_original')
-        self.Xjoin_char=r'[\n、。… \?]*'
+        self.Xjoin_char=r'[、。… \?]*'
         self.dlsite_sch=dlsite_sch
 
     def filter_user(self,user):
@@ -550,8 +550,10 @@ class WorkInfoSearch:
             self.results_works=results_works
 
     def sort_queryset(self,input_order):
-        if(OrderMenu.objects.filter(id=input_order).exists()):
-            menucode=OrderMenu.objects.get(id=input_order).menucode
+
+        if(input_order):
+            menucodes=["release_date_ascending","release_date_descending","add_date_ascending","add_date_descending"]
+            menucode=menucodes[int(input_order)+1]
         else:
             menucode="add_date_descending"
 
@@ -702,27 +704,28 @@ class WorkInfoSearch:
     def get_circle_id_partial(self,name):
         # nameが完全一致するばあいは1つだけ返す、部分一致の場合は複数返す
         try:
-            return [CircleModel.objects.get(alias=name).id]
+            return [CircleModel.objects.get(circle=name).id]
         except ObjectDoesNotExist:
-            query=CircleModel.objects.filter(alias__icontains=name)
+            query=CircleModel.objects.filter(circle__icontains=name)
             return [q.id for q in query]
     def get_cv_id_partial(self,name):
         # nameが完全一致するばあいは1つだけ返す、部分一致の場合は複数返す
         try:
-            return [CharacterVoiceModel.objects.get(alias=name).id]
+            return [CharacterVoiceModel.objects.get(character_voice=name).id]
         except ObjectDoesNotExist:
-            query=CharacterVoiceModel.objects.filter(alias__icontains=name)
+            query=CharacterVoiceModel.objects.filter(character_voice__icontains=name)
             return [q.id for q in query]
     def get_sw_id_partial(self,name):
         # nameが完全一致するばあいは1つだけ返す、部分一致の場合は複数返す
         try:
-            return [ScenarioWriterModel.objects.get(alias=name).id]
+            return [ScenarioWriterModel.objects.get(scenario_writer=name).id]
         except ObjectDoesNotExist:
-            query=ScenarioWriterModel.objects.filter(alias__icontains=name)
+            query=ScenarioWriterModel.objects.filter(scenario_writer__icontains=name)
             return [q.id for q in query]
     def get_xjoined_keyword(self,keyword):
         # keywordのメタ文字はエスケープされたものを入力する
-        return (self.Xjoin_char).join( re.findall(r'\\?.',keyword) )
+        return keyword
+        # return (self.Xjoin_char).join( re.findall(r'\\?.',keyword) )
 
     def search_from_memo(self,memo_Base64):
         # そのうち廃止する
