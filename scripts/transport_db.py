@@ -18,21 +18,21 @@ def generate_random_string(length):
 
 def run():
     print("start")
-    # for i in range(0,2760+1):
-    #     print("id:{0}".format(i))
-    #     addCV(i)
+    for i in range(0,2760+1):
+        print("id:{0}".format(i))
+        addCV(i)
 
-    # for i in range(0,2761+1):
-    #     print("id:{0}".format(i))
-    #     addSW(i)
+    for i in range(0,2761+1):
+        print("id:{0}".format(i))
+        addSW(i)
 
-    # for i in range(0,2212+1):
-    #     print("id:{0}".format(i))
-    #     addCircle(i)
+    for i in range(0,2212+1):
+        print("id:{0}".format(i))
+        addCircle(i)
 
-    # for i in range(0,29118+1):
-    #     print("id:{0}".format(i))
-    #     addVoicedata(i)
+    for i in range(0,29118+1):
+        print("id:{0}".format(i))
+        addVoicedata(i)
 
     for i in range(0,127+1):
         print("id:{0}".format(i))
