@@ -14,11 +14,10 @@ WORKDIR /code
 # Install dependencies
 COPY requirements.txt /code/
 
-RUN apt-get update
-RUN apt-get -y install gcc
-RUN apt-get -y install libmariadb-dev 
-RUN apt-get -y install python-dev 
-RUN apt-get -y install pkg-config
+RUN apt-get -y install gcc=4:8.3.0-1
+RUN apt-get -y install libmariadb-dev=1:10.3.39-0+deb10u1
+RUN apt-get -y install python-dev=2.7.16-1
+RUN apt-get -y install pkg-config=0.29-6
 RUN pip install --upgrade pip
 RUN pip install -r requirements.txt
 

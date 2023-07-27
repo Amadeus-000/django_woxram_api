@@ -1,6 +1,16 @@
 version: '3'
 
 services:
+  db:
+    image: mysql:5.7
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_bin
+    volumes:
+      - ./data/db:/var/lib/mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: dokupe
+      MYSQL_DATABASE: mydatabase
+      MYSQL_USER: ocelot
+      MYSQL_PASSWORD: dokupe
   django:
     build: .
     volumes:
@@ -8,6 +18,8 @@ services:
       - static-volume:/static
     expose:
       - 8000
+    depends_on:
+      - db
 
   nginx:
     image: nginx:latest

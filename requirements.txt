@@ -1,17 +1,17 @@
 Django===3.1.7
-gunicorn
-beautifulsoup4
-django-cors-headers
-djangorestframework
-django-extensions
-ginza
-ja-ginza
-ja-sentence-segmenter
-jaconv
-selenium
-spacy
-webdriver-manager
-mysqlclient
+gunicorn===21.2.0
+beautifulsoup4===4.12.2
+django-cors-headers===3.11.0
+djangorestframework===3.14.0
+django-extensions===3.1.5
+ginza===5.1.2
+ja-ginza===5.1.2
+ja-sentence-segmenter===0.0.2
+jaconv===0.3.4
+selenium===4.10.0
+spacy===3.4.4
+webdriver-manager===3.9.1
+mysqlclient===2.2.0
 git+https://github.com/Amadeus-000/Amadeus.git
 
 # python==3.8.8
