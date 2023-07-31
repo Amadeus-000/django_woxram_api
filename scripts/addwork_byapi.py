@@ -33,7 +33,7 @@ def run():
         with open('tmp/workurls_tmp.txt','r',encoding='utf-8') as f:
             workurls=(f.read()).split(',')
     else:
-        workurls=amadeus.DlsiteTools().get_workurls(2023,7,8)
+        workurls=amadeus.DlsiteTools().get_workurls(2023,7,16)
 
     # 手動
     # workurls=["https://www.dlsite.com/maniax/work/=/product_id/RJ010101.html"]
@@ -51,7 +51,7 @@ def run():
         workinfo=amadeus.WorkInfo(workurl)
         if('ボイス・ASMR' in workinfo.type):
             if(workinfo.lang==[] or ('日本語' in workinfo.lang)):
-                url='http://localhost:8080/api/transcript/getdlsite?work_id={0}'.format(work_id)
+                url='http://133.130.96.237/api/transcript/getdlsite?work_id={0}'.format(work_id)
                 print(url+'にアクセス開始')
                 try:
                     response=requests.get(url).json()

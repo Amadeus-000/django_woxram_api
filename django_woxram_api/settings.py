@@ -23,9 +23,9 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'xvvjb#_xhr^f@o93w)n04sa-friy&gmv(m7xy%*q_n5o@4!g^p'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
-ALLOWED_HOSTS = ['woxram-api.com','localhost']
+ALLOWED_HOSTS = ['woxram-api.com','133.130.96.237']
 
 
 # Application definition
@@ -54,6 +54,9 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
+    # 'django.middleware.cache.UpdateCacheMiddleware',
+    # 'django.middleware.cache.FetchFromCacheMiddleware',
 ]
 
 ROOT_URLCONF = 'django_woxram_api.urls'
@@ -140,3 +143,22 @@ USE_TZ = True
 
 STATIC_URL = '/static/'
 STATIC_ROOT = '/static'
+
+
+CORS_ORIGIN_WHITELIST = [
+    "https://woxram.com",
+    "https://woxram-react.vercel.app",
+    'http://133.130.96.237',
+]
+CORS_ALLOW_ALL_ORIGINS = True
+
+
+# viewのキャッシュの設定
+# CACHE_MIDDLEWARE_SECONDS = 60
+
+# CACHES = {
+#     'default': {
+#         'BACKEND': 'django.core.cache.backends.filebased.FileBasedCache',
+#         'LOCATION': '/var/tmp/django_cache',
+#     }
+# }

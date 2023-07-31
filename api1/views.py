@@ -107,6 +107,18 @@ class WoxramSearchAPI(APIView):
         # return Response(results_works)
         return Response([results_works,number_of_record])
 
+class GetMaintext(APIView):
+    def get(self,request):
+        id_input=request.GET.get("id")
+        records=VoiceDataModel.objects.filter(id=id_input)
+        if(records.exists()):
+            for record in records:
+                return Response({
+                    "work_id":record.work_id,
+                    "maintext":record.maintext,
+                })
+        else:
+            return Response(False)
 
 class WorkInfoSearch:
     def __init__(self,dlsite_sch=False):

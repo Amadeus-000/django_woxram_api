@@ -1,5 +1,5 @@
 # モデル
-from app1.models import VoiceDataModel, CircleModel, CharacterVoiceModel,ScenarioWriterModel,OrderMenu,GenreModel,WorkTextState
+from app1.models import VoiceDataModel, CircleModel, CharacterVoiceModel,ScenarioWriterModel,GenreModel
 
 # モジュール
 import datetime, time, os, sys,jaconv
