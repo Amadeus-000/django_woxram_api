@@ -137,9 +137,9 @@ class AddWorkAPI:
             record=CircleModel(
                 circle=cir_name_input,
                 yomigana='00000',
-                alias=cir_name_input.replace(' ', '_'),
                 circle_id=cir_id_input,
                 url_circle=cir_url_input,
+                approval_state='未許可',
             )
             record.save()
             print('circle : {0} is created.'.format(cir_name_input))
@@ -154,8 +154,9 @@ class AddWorkAPI:
             obj=CharacterVoiceModel(
                 character_voice=cv_name_input,
                 yomigana='00000',
-                alias=cv_name_input,
             )
+            obj.save()
+            obj.cv_id='cv'+str(obj.id)
             obj.save()
             print('creating '+cv_name_input)
         obj=query.get(character_voice=cv_name_input)
@@ -171,8 +172,9 @@ class AddWorkAPI:
             obj=ScenarioWriterModel(
                 scenario_writer=sw_name_input,
                 yomigana='00000',
-                alias=sw_name_input,
             )
+            obj.save()
+            obj.sw_id='sw'+str(obj.id)
             obj.save()
             print('creating '+sw_name_input)
         obj=query.get(scenario_writer=sw_name_input)
@@ -185,6 +187,219 @@ class AddWorkAPI:
             print('retry save...')
             time.sleep(30)
             record.save()
+
+    def on2true(self,input):
+        if(input=='on'):
+            return True
+        elif(input==True):
+            return True
+        elif(input=='off'):
+            return False
+        else:
+            return False
+    def date_conv(self,date_input):
+        year=int(date_input.split('年')[0])
+        date_input=date_input.split('年')[1]
+        month=int(date_input.split('月')[0])
+        date_input=date_input.split('月')[1]
+        day=int(date_input.split('日')[0])
+
+        return datetime.date(year, month, day)
+
+
+
+class AddWork:
+    def __init__(
+            self,
+            workinfo,
+            commerce_switch=True,
+            sample_switch=True,
+            public_switch=True,
+            display_range=100,
+            maintexts_original=[],
+            maintexts=[],
+            maintexts_conv=[],
+            chapter_names=[],
+            text_version="script,",
+            uid='',
+        ):
+
+        #発売日のチェック
+        if(workinfo.release_date=='-'):
+            self.release_date='2000年01月01日'
+        else:
+            self.release_date=workinfo.release_date
+
+        #アダルトコンテンツ
+        if(workinfo.adult=='18禁'):
+            self.adult_switch=True
+        else:
+            self.adult_switch=False
+
+        # workinfoからの読み込み
+        self.title=workinfo.title
+        self.url=workinfo.url
+        self.work_id=workinfo.work_id
+        self.imgurl=workinfo.imgurl
+        self.type=workinfo.type
+        self.circle=workinfo.circle
+        self.circle_url=workinfo.circle_url
+        self.cv=workinfo.cv
+        self.scenario=workinfo.scenario
+        self.genres=workinfo.genres
+        self.description_original=workinfo.description
+        self.sample_url=workinfo.sample_url
+
+        # workinfo以外のwoxramに必要な情報
+        self.commerce_switch=commerce_switch
+        self.sample_switch=sample_switch
+        self.public_switch=public_switch
+        self.display_range=display_range
+        self.uid=uid
+        self.maintexts_original=maintexts_original
+        self.maintexts=maintexts
+        self.maintexts_conv=maintexts_conv
+        self.chapter_names=chapter_names
+        self.text_version=text_version
+
+    def make_records(self):
+
+        # descriptionの準備
+        descripton_info='{0}\n{1}\n{2}\n{3}'.format(self.title,self.circle,'/'.join(self.cv),'/'.join(self.scenario))
+        description=descripton_info+'\n\n'+self.description_original
+        modify_text_des=amadeus.ModifyText(description)
+        description=modify_text_des.text
+        description_conv=modify_text_des.text_conv
+
+        obj=VoiceDataModel(
+            name=self.title,
+            circle=self.check_create__rename_cir(self.circle,self.circle_url),
+            url=self.url,
+            url_img=self.imgurl,
+            release_date=self.date_conv(self.release_date),
+            work_id=self.work_id+'xs',
+            description_original=self.description_original,
+            description=description,
+            description_conv=description_conv,
+            commerce_switch=self.commerce_switch,
+            public_switch=self.public_switch,
+            sample_switch=self.sample_switch,
+            adult_switch=self.adult_switch,
+            display_range=self.display_range,
+            confidence=100.0,
+            chapter_names='ΦΦΦΦΦ'.join(self.chapter_names),
+            maintext_original='ΦΦΦΦΦ'.join(self.maintexts_original),
+            maintext='ΦΦΦΦΦ'.join(self.maintexts),
+            maintext_conv='ΦΦΦΦΦ'.join(self.maintexts_conv),
+            text_version=self.text_version,
+            uid=self.uid
+        )
+
+        obj.save()
+
+        #声優、シナリオ　を追加
+        for x in self.cv:
+            obj.character_voice.add( self.check_create_cv(x) )
+        for x in self.scenario:
+            obj.scenario_writers.add( self.check_create_sw(x) )
+        obj.save()
+
+        print("id={0} recordが作成されました".format(obj.id))
+
+    def update_sample_records(self):
+        if(VoiceDataModel.objects.filter(work_id=self.workinfo['work_id']+'xs').exists()):
+            record=VoiceDataModel.objects.get(work_id=self.workinfo['work_id']+'xs')
+
+            # descriptionの準備
+            descripton_info='{0}\n{1}\n{2}\n{3}'.format(self.workinfo["title"],self.workinfo["circle"],'/'.join(self.workinfo["cv"]),'/'.join(self.workinfo["scenario"]))
+            description=descripton_info+'\n\n'+self.workinfo["description"]
+            modify_text_des=amadeus.ModifyText(description)
+            description=modify_text_des.text
+            description_conv=modify_text_des.text_conv
+
+            record.description_original=self.workinfo["description"]
+            record.description=description
+            record.description_conv=description_conv
+
+            record.name=self.workinfo["title"]
+            record.add_date=datetime.date.today()
+            record.chapter_names='ΦΦΦΦΦ'.join(self.workinfo["chapter_names"])
+            record.maintext_original='ΦΦΦΦΦ'.join(self.workinfo["maintext_original"])
+            record.maintext='ΦΦΦΦΦ'.join(self.workinfo["maintext"])
+            record.maintext_conv='ΦΦΦΦΦ'.join(self.workinfo["maintext_conv"])
+            record.text_version=self.workinfo["text_version"]
+
+            #声優、シナリオ　を追加
+            record.character_voice.clear()
+            for x in self.workinfo["cv"]:
+                record.character_voice.add( self.check_create_cv(x) )
+            record.scenario_writers.clear()
+            for x in self.workinfo["scenario"]:
+                record.scenario_writers.add( self.check_create_sw(x) )
+
+            self.save_record_retry(record)
+            print("id={0} recordがupdateされました".format(record.id))
+        else:
+            self.make_sample_records()
+
+    def check_create__rename_cir(self,cir_name_input,cir_url_input):
+        cir_id_input=(cir_url_input.split('/')[-1]).split('.')[0]
+        query=CircleModel.objects.all()
+        if(query.filter(circle_id=cir_id_input).exists()):
+            record=query.get(circle_id=cir_id_input)
+            if(record.circle!=cir_name_input):
+                record.supplement='{0}\nold name : {1}\n'.format(record.supplement, record.circle)
+                record.circle=cir_name_input
+                record.alias=cir_name_input
+                record.save()
+                print('{0} id={1} is renamed.'.format(record.circle,record.id))
+        else:
+            record=CircleModel(
+                circle=cir_name_input,
+                yomigana='00000',
+                circle_id=cir_id_input,
+                url_circle=cir_url_input,
+                approval_state='未許可',
+            )
+            record.save()
+            print('circle : {0} is created.'.format(cir_name_input))
+        return record
+    def check_create_cv(self,cv_name_input):
+        #入力された声優がデータベースに存在するかチェックして、存在しない場合は作成する
+        #入力された声優のオブジェクトを返す
+        query=CharacterVoiceModel.objects.all()
+        existornot=query.filter(character_voice=cv_name_input).exists()
+        # print(existornot)
+        if(not existornot):
+            obj=CharacterVoiceModel(
+                character_voice=cv_name_input,
+                yomigana='00000',
+            )
+            obj.save()
+            obj.cv_id='cv'+str(obj.id)
+            obj.save()
+            print('creating '+cv_name_input)
+        obj=query.get(character_voice=cv_name_input)
+        return obj
+    def check_create_sw(self,sw_name_input):
+        #入力された声優がデータベースに存在するかチェックして、存在しない場合は作成する
+        #入力された声優のオブジェクトを返す
+        query=ScenarioWriterModel.objects.all()
+        existornot=query.filter(scenario_writer=sw_name_input).exists()
+        # print(sw_name_input)
+        # print('このシナリオライターはScenarioWriterModelに存在するか : {0}'.format(existornot))
+        if(not existornot):
+            obj=ScenarioWriterModel(
+                scenario_writer=sw_name_input,
+                yomigana='00000',
+            )
+            obj.save()
+            obj.sw_id='sw'+str(obj.id)
+            obj.save()
+            print('creating '+sw_name_input)
+        obj=query.get(scenario_writer=sw_name_input)
+        return obj
+
 
     def on2true(self,input):
         if(input=='on'):

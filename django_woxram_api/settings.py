@@ -25,7 +25,7 @@ SECRET_KEY = 'xvvjb#_xhr^f@o93w)n04sa-friy&gmv(m7xy%*q_n5o@4!g^p'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = False
 
-ALLOWED_HOSTS = ['woxram-api.com','133.130.96.237']
+ALLOWED_HOSTS = ['woxram-api.com']
 
 
 # Application definition
@@ -47,6 +47,7 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -54,9 +55,8 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'corsheaders.middleware.CorsMiddleware',
-    # 'django.middleware.cache.UpdateCacheMiddleware',
-    # 'django.middleware.cache.FetchFromCacheMiddleware',
+    'django.middleware.cache.UpdateCacheMiddleware',
+    'django.middleware.cache.FetchFromCacheMiddleware',
 ]
 
 ROOT_URLCONF = 'django_woxram_api.urls'
@@ -95,8 +95,9 @@ DATABASES = {
         'ENGINE': 'django.db.backends.mysql',
         'NAME': 'mydatabase',
         'USER': 'ocelot',
-        'PASSWORD': 'dokupe',
+        'PASSWORD': '8"9B?Wcgrz',
         'HOST': 'db',  # Dockerのサービス名を指定
+        'HOST': '162.43.14.6',
         'PORT': '3306',
         'OPTIONS': {
             'charset': 'utf8mb4',
@@ -147,18 +148,41 @@ STATIC_ROOT = '/static'
 
 CORS_ORIGIN_WHITELIST = [
     "https://woxram.com",
+    "http://woxram.com",
     "https://woxram-react.vercel.app",
-    'http://133.130.96.237',
+    "http://162.43.16.7",
+    "https://woxram.site",
+    "http://woxram.site",
 ]
-CORS_ALLOW_ALL_ORIGINS = True
+# CORS_ALLOW_ALL_ORIGINS = True
 
 
 # viewのキャッシュの設定
-# CACHE_MIDDLEWARE_SECONDS = 60
+CACHE_MIDDLEWARE_SECONDS = 60
 
-# CACHES = {
-#     'default': {
-#         'BACKEND': 'django.core.cache.backends.filebased.FileBasedCache',
-#         'LOCATION': '/var/tmp/django_cache',
-#     }
-# }
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.filebased.FileBasedCache',
+        'LOCATION': '/var/tmp/django_cache',
+    }
+}
+
+
+
+# sentry
+import sentry_sdk
+from sentry_sdk.integrations.django import DjangoIntegration
+
+sentry_sdk.init(
+  dsn="https://6f4eb6a45dd70eb58f37872c30e81377@o4505679903260672.ingest.sentry.io/4505679911321600",
+  integrations=[DjangoIntegration()],
+
+  # Set traces_sample_rate to 1.0 to capture 100%
+  # of transactions for performance monitoring.
+  # We recommend adjusting this value in production.
+  traces_sample_rate=1.0,
+
+  # If you wish to associate users to errors (assuming you are using
+  # django.contrib.auth) you may enable sending PII data.
+  send_default_pii=True
+)

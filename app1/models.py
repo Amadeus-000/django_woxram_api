@@ -80,6 +80,8 @@ class VoiceDataModel(models.Model):
     maintext_conv=models.TextField(blank=True,null=True)
     maintext_old=models.TextField(blank=True,null=True)
     text_version=models.CharField(blank=True,null=True,max_length=64)
+    uid=models.CharField(max_length=64,default="",null=True,blank=True)
+
 
     def __str__(self):
         return self.name+' id:'+str(self.id)

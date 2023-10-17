@@ -1,4 +1,5 @@
 from django.shortcuts import redirect
+from django.http import HttpResponse
 
 def redirect_view(request):
-    return redirect("https://woxram.com/")
+    return HttpResponse("Hello, World! Woxram-api server")

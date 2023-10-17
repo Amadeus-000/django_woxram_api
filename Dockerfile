@@ -14,6 +14,7 @@ WORKDIR /code
 # Install dependencies
 COPY requirements.txt /code/
 
+RUN apt-get update
 RUN apt-get -y install gcc=4:8.3.0-1
 RUN apt-get -y install libmariadb-dev=1:10.3.39-0+deb10u1
 RUN apt-get -y install python-dev=2.7.16-1
@@ -25,4 +26,4 @@ RUN pip install -r requirements.txt
 COPY . /code/
 
 # Run gunicorn
-CMD gunicorn django_woxram_api.wsgi:application --bind 0.0.0.0:8000 -t 300
+CMD gunicorn django_woxram_api.wsgi:application --bind 0.0.0.0:8000 -t 300 --workers 4

@@ -12,6 +12,7 @@ selenium===4.10.0
 spacy===3.4.4
 webdriver-manager===3.9.1
 mysqlclient===2.2.0
+sentry-sdk==1.30.0
 git+https://github.com/Amadeus-000/Amadeus.git
 
 # python==3.8.8

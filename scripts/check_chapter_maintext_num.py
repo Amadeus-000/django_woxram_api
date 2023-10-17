@@ -6,7 +6,8 @@ def run():
     queryset=VoiceDataModel.objects.all()
     for q in queryset:
         if(q.chapter_names=='' or q.chapter_names==None):
-            pass
+            if(q.maintext):
+                print('empty {0}'.format(q.id))
         else:
             chapter_names=q.chapter_names
             maintext=q.maintext

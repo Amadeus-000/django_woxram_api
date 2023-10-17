@@ -1,0 +1,17 @@
+
+runscript
+docker exec -it container_id python manage.py runscript test
+docker exec -it 1b63df676d6f python manage.py runscript test
+docker exec -it 21e64b37ae71 python manage.py runscript addwork_byapi
+docker exec -it 21e64b37ae71 python manage.py runscript updatework_byapi
+docker exec -it 1b63df676d6f python manage.py runscript check_circle
+
+起動
+docker compose -f docker-compose.yaml up -d
+停止
+docker compose stop
+
+
+CONTAINER ID   IMAGE                      COMMAND                  CREATED       STATUS             PORTS                                                                      NAMES
+65e335256f5f   nginx:latest               "/docker-entrypoint.…"   4 weeks ago   Up About an hour   0.0.0.0:80->80/tcp, :::80->80/tcp, 0.0.0.0:443->443/tcp, :::443->443/tcp   django_woxram_api-nginx-1
+1b63df676d6f   django_woxram_api-django   "/bin/sh -c 'gunicor…"   4 weeks ago   Up About an hour   8000/tcp       

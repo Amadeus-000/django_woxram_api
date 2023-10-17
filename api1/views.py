@@ -21,7 +21,7 @@ import amadeus
 
 class CheckDatabaseUpdateInfo(APIView):
     def get(self,request):
-        return Response("データベース更新日 2023/07/15")
+        return Response("データベース更新日 2023/10/14")
 
 
 class GetNamelist_ccs(APIView):
@@ -30,19 +30,13 @@ class GetNamelist_ccs(APIView):
         namelist=[]
         queryset=CircleModel.objects.all()
         for q in queryset:
-            namelist.append(q.alias)
+            namelist.append(q.circle)
         queryset=CharacterVoiceModel.objects.all()
         for q in queryset:
-            if(q.alias==None):
-                namelist.append('NULL')
-            else:
-                namelist.append(q.alias)
+            namelist.append(q.character_voice)
         queryset=ScenarioWriterModel.objects.all()
         for q in queryset:
-            if(q.alias==None):
-                namelist.append('NULL')
-            else:
-                namelist.append(q.alias)
+            namelist.append(q.scenario_writer)
         return Response(list(set(namelist)))
 
 class GetCircleId(APIView):
@@ -73,6 +67,8 @@ class WoxramSearchAPI(APIView):
 
             wis_ins=WorkInfoSearch(si_ins.dlsite_sch)
             #必須じゃないフィルター
+            if(request.GET.get('safe')=='on'):
+                wis_ins.filter_adult(False)
             wis_ins.filter_sample(si_ins.sample_switch)
             wis_ins.filter_public(True)
             wis_ins.filter_circle(si_ins.circle_checkbox)
@@ -138,7 +134,7 @@ class WorkInfoSearch:
             self.queryset=self.queryset.filter(public_switch=input_pub)
         return self.queryset
     def filter_adult(self,input_ad):
-        self.queryset=self.queryset.filter(public_switch=input_ad)
+        self.queryset=self.queryset.filter(adult_switch=input_ad)
         return self.queryset
     def filter_circle(self,input_circle):
         #input_circleはCircleModelのidのリストを入力する
@@ -176,42 +172,12 @@ class WorkInfoSearch:
     def filter_keywords(self):
         if(self.dlsite_sch):
             for keyword in self.keywords_conv:
-                keyword_xjoined=self.get_xjoined_keyword(keyword)
-                self.queryset=self.queryset.filter(Q(maintext_conv__regex=keyword_xjoined) | Q(description_conv__regex=keyword_xjoined))
+                self.queryset=self.queryset.filter(Q(maintext_conv__contains=keyword) | Q(description_conv__contains=keyword))
         else:
             for keyword in self.keywords_conv:
-                keyword_xjoined=self.get_xjoined_keyword(keyword)
-                self.queryset=self.queryset.filter(maintext_conv__regex=keyword_xjoined)
+                self.queryset=self.queryset.filter(maintext_conv__contains=keyword)
 
         self.number_of_record=self.queryset.count()
-
-    def filter_commond1(self):
-        #input_commondはそのサークル、声優の名前でフィルターできる
-        filter_cmd=[]
-
-        #サークルフィルター
-        for c in self.commond:
-            tmp=self.get_circle_id(c)
-            if(tmp):
-                filter_cmd.append(tmp)
-        self.filter_circle(filter_cmd)
-        filter_cmd.clear()
-
-        #声優フィルター
-        for c in self.commond:
-            tmp=self.get_cv_id(c)
-            if(tmp):
-                filter_cmd.append(tmp)
-        self.filter_cv(filter_cmd)
-        filter_cmd.clear()
-
-        #シナリオライターフィルター
-        for c in self.commond:
-            tmp=self.get_sw_id(c)
-            if(tmp):
-                filter_cmd.append(tmp)
-        self.filter_scenario(filter_cmd)
-        filter_cmd.clear()
 
     def filter_commond(self):
         for c in self.commond:
@@ -247,12 +213,10 @@ class WorkInfoSearch:
     def exclude_keywords(self):
         if(self.dlsite_sch):
             for keyword in self.minus_keywords_conv:
-                keyword_xjoined=self.get_xjoined_keyword(keyword)
-                self.queryset=self.queryset.exclude(Q(maintext_conv__regex=keyword_xjoined) | Q(description_conv__regex=keyword_xjoined))
+                self.queryset=self.queryset.exclude(Q(maintext_conv__contains=keyword) | Q(description_conv__contains=keyword))
         else:
             for keyword in self.minus_keywords_conv:
-                keyword_xjoined=self.get_xjoined_keyword(keyword)
-                self.queryset=self.queryset.exclude(maintext_conv__regex=keyword_xjoined)
+                self.queryset=self.queryset.exclude(maintext_conv__contains=keyword)
         
     def exclude_commond(self):
         #input_commondはそのサークル、声優の名前でフィルターできる
@@ -324,7 +288,10 @@ class WorkInfoSearch:
                 if(pattern.search(i)):
                     i=modify_ins.replace_fuseji(i)
                 #メタ文字をエスケープする
-                self.keywords.append( re.escape(i) )
+                # self.keywords.append( re.escape(i) )
+
+                # メタ文字をエスケープしない
+                self.keywords.append(i)
         
         if('@all' in self.commond):
             self.keywords=[]
@@ -342,159 +309,10 @@ class WorkInfoSearch:
         self.exclude_keywords()
         self.filter_keywords()
 
-    def search_keyword4(self,page):
-        results_works=[]
-        results_works_info={}
-        results_works_info_keywords=[]
-        results_works_info_keywords_detail={}
-        now=datetime.datetime.today()
-        cur_work_count=0
-        page=int(page)
-
-        for voicedata in self.queryset:
-            display_range=voicedata.display_range
-            cur_page=int(cur_work_count/50)+1
-
-            
-            if(cur_page==page):
-                for (keyword_conv,keyword) in zip(self.keywords_conv,self.keywords):
-                    match,hit_count,chapter_name,thistext,chapter_num=self.explore_keyword(keyword_conv,voicedata.maintext,voicedata.maintext_conv,voicedata.chapter_names)
-                    font_color='red'
-                    # thistext=voicedata.maintext
-                    if(hit_count==0 and self.dlsite_sch):
-                        match,hit_count,_,__,chapter_num=self.explore_keyword(keyword_conv,voicedata.description,voicedata.description_conv)
-                        font_color='blue'
-                        thistext=voicedata.description
-                        chapter_name='作品ページ'
-                    
-                    results_works_info_keywords_detail['keyword']=keyword
-                    results_works_info_keywords_detail['hit_count']=hit_count
-                    results_works_info_keywords_detail['color']=font_color
-
-                    if(font_color=='blue'):
-                        results_works_info_keywords_detail['status']=chapter_name+' より'
-                    else:
-                        if(voicedata.sample_switch):
-                            results_works_info_keywords_detail['status']='サンプル {0} より'.format(chapter_name)
-                        else:
-                            results_works_info_keywords_detail['status']='台本 {0} より'.format(chapter_name)
-
-                    m=self.rand_match_obj(match)
-                    if(hit_count==0):
-                        text_fh,text_c,text_lh=None,None,None
-                    else:
-                        text_fh,text_c,text_lh=self.adjust_letter_divide(thistext,m.start(),m.end(),display_range)
-                    results_works_info_keywords_detail['keyword']=text_c
-                    results_works_info_keywords_detail['text_fh']=text_fh
-                    results_works_info_keywords_detail['text_lh']=text_lh
-
-                    results_works_info_keywords.append(copy.copy(results_works_info_keywords_detail))
-                    results_works_info_keywords_detail.clear()
-
-
-                results_works_info['id']=voicedata.id
-                results_works_info['url_edit']='https://woxram.com/xyz/admin/app1/voicedatamodel/'+str(voicedata.id)+'/change/'
-                results_works_info['title']=voicedata.name
-                results_works_info['url']=voicedata.url
-                results_works_info['url_img']=voicedata.url_img
-                results_works_info['circle']=voicedata.circle.circle
-                # cv=''
-                # for y in [x.character_voice for x in voicedata.character_voice.all()]:
-                #     cv=cv + y + '/'
-                cv='/'.join([x.character_voice for x in voicedata.character_voice.all()])
-                results_works_info['cv1']=cv
-                results_works_info['scenario']='/'.join([x.scenario_writer for x in voicedata.scenario_writers.all()])
-                results_works_info['work_id']=voicedata.work_id
-                results_works_info['keywords']=copy.copy(results_works_info_keywords)
-                results_works_info_keywords.clear()
-                results_works.append(copy.copy(results_works_info))
-                results_works_info.clear()
-
-                cur_work_count+=1
-            elif(cur_page < page):
-                #ページ飛ばし
-                cur_work_count+=1
-            else:
-                break
-        self.results_works=results_works
-
-    def search_keyword5(self,page):
-            results_works=[]
-            results_works_info={}
-            results_works_info_keywords_detail={}
-            cur_work_count=0
-            page=int(page)
-
-            for voicedata in self.queryset:
-                display_range=voicedata.display_range
-                cur_page=int(cur_work_count/50)+1
-                keyword_count=0
-                if(cur_page==page):
-                    for (keyword_conv,keyword) in zip(self.keywords_conv,self.keywords):
-                        match,hit_count,chapter_name,thistext,chapter_num=self.explore_keyword(keyword_conv,voicedata.maintext,voicedata.maintext_conv,voicedata.chapter_names)
-                        font_color='red'
-                        # thistext=voicedata.maintext
-                        if(hit_count==0 and self.dlsite_sch):
-                            match,hit_count,_,__,chapter_num=self.explore_keyword(keyword_conv,voicedata.description,voicedata.description_conv)
-                            font_color='blue'
-                            thistext=voicedata.description
-                            chapter_name='作品ページ'
-                        
-                        results_works_info_keywords_detail['keyword']=keyword
-                        results_works_info_keywords_detail['hit_count']=hit_count
-                        results_works_info_keywords_detail['color']=font_color
-
-                        if(font_color=='blue'):
-                            results_works_info_keywords_detail['status']=chapter_name+' より'
-                        else:
-                            if(voicedata.sample_switch):
-                                results_works_info_keywords_detail['status']='サンプル {0} より'.format(chapter_name)
-                            else:
-                                results_works_info_keywords_detail['status']='台本 {0} より'.format(chapter_name)
-
-                        m=self.rand_match_obj(match)
-                        if(hit_count==0):
-                            text_fh,text_c,text_lh=None,None,None
-                        else:
-                            text_fh,text_c,text_lh=self.adjust_letter_divide(thistext,m.start(),m.end(),display_range)
-                        results_works_info_keywords_detail['keyword']=text_c
-                        results_works_info_keywords_detail['text_fh']=text_fh
-                        results_works_info_keywords_detail['text_lh']=text_lh
-                        results_works_info_keywords_detail['start_pos']=m.start()
-                        results_works_info_keywords_detail['end_pos']=m.end()
-                        results_works_info_keywords_detail['chapter_num']=chapter_num
-
-                        results_works_info['keyword'+str(keyword_count)]=json.dumps(results_works_info_keywords_detail)
-                        keyword_count+=1
-
-
-                    results_works_info['id']=voicedata.id
-                    results_works_info['public_record_id']=voicedata.public_record_id
-                    results_works_info['url_edit']='https://woxram.com/django/xyz/admin/app1/voicedatamodel/'+str(voicedata.id)+'/change/'
-                    results_works_info['title']=voicedata.name
-                    results_works_info['url']=voicedata.url
-                    results_works_info['url_img']=voicedata.url_img
-                    results_works_info['circle']=voicedata.circle.circle
-                    cv='/'.join([x.character_voice for x in voicedata.character_voice.all()])
-                    results_works_info['cv1']=cv
-                    results_works_info['scenario']='/'.join([x.scenario_writer for x in voicedata.scenario_writers.all()])
-                    results_works_info['work_id']=voicedata.work_id
-                    results_works.append(copy.copy(results_works_info))
-                    results_works_info.clear()
-
-                    cur_work_count+=1
-                elif(cur_page < page):
-                    #ページ飛ばし
-                    cur_work_count+=1
-                else:
-                    break
-            self.results_works=results_works
-
     def search_keyword6(self,page=1):
             results_works = []
             results_works_info={}
             results_works_info_keywords_detail={}
-            work_count=0
             page=int(page)
             duration_end=page*50
             duration_start=duration_end-50
@@ -507,15 +325,24 @@ class WorkInfoSearch:
                 display_range=voicedata.display_range
                 keyword_count=0
                 for (keyword_conv,keyword) in zip(self.keywords_conv,self.keywords):
-                    match,hit_count,chapter_name,thistext,chapter_num=self.explore_keyword(keyword_conv,voicedata.maintext,voicedata.maintext_conv,voicedata.chapter_names)
+                    match_text_fh,match_text_c,match_text_lh,chapter_name,hit_count=self.get_matchtext(
+                        keyword_conv,
+                        voicedata.maintext,
+                        voicedata.maintext_conv,
+                        voicedata.chapter_names,
+                        display_range=display_range
+                    )
                     font_color='red'
                     if(hit_count==0 and self.dlsite_sch):
-                        match,hit_count,_,__,chapter_num=self.explore_keyword(keyword_conv,voicedata.description,voicedata.description_conv)
+                        match_text_fh,match_text_c,match_text_lh,chapter_name,hit_count=self.get_matchtext(
+                            keyword_conv,
+                            voicedata.description,
+                            voicedata.description_conv,
+                            '作品ページ',
+                            display_range=display_range,
+                        )
                         font_color='blue'
-                        thistext=voicedata.description
-                        chapter_name='作品ページ'
                     
-                    results_works_info_keywords_detail['keyword']=keyword
                     results_works_info_keywords_detail['hit_count']=hit_count
                     results_works_info_keywords_detail['color']=font_color
 
@@ -527,17 +354,9 @@ class WorkInfoSearch:
                         else:
                             results_works_info_keywords_detail['status']='台本 {0} より'.format(chapter_name)
 
-                    m=self.rand_match_obj(match)
-                    if(hit_count==0):
-                        text_fh,text_c,text_lh=None,None,None
-                    else:
-                        text_fh,text_c,text_lh=self.adjust_letter_divide(thistext,m.start(),m.end(),display_range)
-                    results_works_info_keywords_detail['keyword']=text_c
-                    results_works_info_keywords_detail['text_fh']=text_fh
-                    results_works_info_keywords_detail['text_lh']=text_lh
-                    results_works_info_keywords_detail['start_pos']=m.start()
-                    results_works_info_keywords_detail['end_pos']=m.end()
-                    results_works_info_keywords_detail['chapter_num']=chapter_num
+                    results_works_info_keywords_detail['keyword']=match_text_c
+                    results_works_info_keywords_detail['text_fh']=match_text_fh
+                    results_works_info_keywords_detail['text_lh']=match_text_lh
                     results_works_info_keywords_detail['chapter_name']=chapter_name
 
                     results_works_info['keyword'+str(keyword_count)]=json.dumps(results_works_info_keywords_detail)
@@ -553,11 +372,7 @@ class WorkInfoSearch:
                 results_works_info['cv1']=cv
                 results_works_info['scenario']='/'.join([x.scenario_writer for x in voicedata.scenario_writers.all()])
                 results_works_info['work_id']=voicedata.work_id
-                # results_works[work_count]=copy.copy(results_works_info)
                 results_works.append(copy.copy(results_works_info))
-
-
-                work_count+=1
 
             self.results_works=results_works
 
@@ -565,7 +380,7 @@ class WorkInfoSearch:
 
         if(input_order):
             menucodes=["release_date_ascending","release_date_descending","add_date_ascending","add_date_descending"]
-            menucode=menucodes[int(input_order)+1]
+            menucode=menucodes[int(input_order)-1]
         else:
             menucode="add_date_descending"
 
@@ -577,61 +392,9 @@ class WorkInfoSearch:
             self.queryset=self.queryset.order_by('add_date')
         elif(menucode=='add_date_descending'):
             self.queryset=self.queryset.order_by('add_date').reverse()
-        elif(menucode=='hit_descending' and self.keywords!=[]):
-            if(self.dlsite_sch):
-                cases=[When(id=q.id, then=Value(self.explore_two_step(self.keywords_conv[0],q) ) ) for q in self.queryset]
-            else:
-                cases=[When(id=q.id, then=Value(self.explore_keyword(self.keywords_conv[0],q.maintext_conv)[1] ) ) for q in self.queryset]
-            self.queryset=self.queryset.annotate(
-                hit_count=Case(
-                    *cases,
-                    output_field=IntegerField(),
-                )
-            ).order_by('hit_count').reverse()
-        elif(menucode=='hit_ascending' and self.keywords!=[]):
-            if(self.dlsite_sch):
-                cases=[When(id=q.id, then=Value(self.explore_two_step(self.keywords_conv[0],q) ) ) for q in self.queryset]
-            else:
-                cases=[When(id=q.id, then=Value(self.explore_keyword(self.keywords_conv[0],q.maintext_conv)[1] ) ) for q in self.queryset]
-            self.queryset=self.queryset.annotate(
-                hit_count=Case(
-                    *cases,
-                    output_field=IntegerField(),
-                )
-            ).order_by('hit_count')
         else:
             self.queryset=self.queryset.order_by('add_date').reverse()
 
-    def adjust_letter_divide1(self,text,start,end,display_range):
-        start_minus=start-display_range
-        if(start_minus<0):
-                start_minus=0
-        text_fh=text[start_minus:start]
-        while(True):
-            num_of_newline=len(re.findall('\n',text_fh))
-            start_minus=start-display_range-num_of_newline
-            if(start_minus<0):
-                start_minus=0
-            text_fh=text[start_minus:start]
-            if( len(re.findall('\n',text_fh))==num_of_newline):
-                break
-
-        end_plus=end+display_range
-        if(end_plus>len(text)):
-                end_plus=len(text)
-        text_lf=text[end:end_plus]
-        while(True):
-            num_of_newline=len(re.findall('\n',text_lf))
-            end_plus=end+display_range+num_of_newline
-            if(end_plus>len(text)):
-                    end_plus=len(text)
-            text_lf=text[end:end_plus]
-            if( len(re.findall('\n',text_lf))==num_of_newline):
-                break
-
-        text_c=text[start:end]
-
-        return text_fh,text_c,text_lf
     def adjust_letter_divide(self,text,start,end,display_range):
         start_back=start-display_range
         if(start_back<0):
@@ -644,59 +407,40 @@ class WorkInfoSearch:
         text_c=text[start:end]
         return text_fh,text_c,text_lf
 
-    def explore_keyword(self,keyword_conv,text,text_conv,chapter_names_str=False):
-        keyword_xjoined=self.get_xjoined_keyword(keyword_conv)
-        if(chapter_names_str):
-            #hit_count計算
-            match=re.finditer(keyword_xjoined,text_conv,re.IGNORECASE)
-            hit_count=len( list(match) )
-            if(hit_count==0):
-                # myprint('hit_count=0 1')
-                return '',hit_count,'','',-1
+    def get_matchtext(self, keyword_conv, text, text_conv, chapter_names_str,display_range=100):
+        # match_text_fh,match_text_c,match_text_lh,chapter_name,hit_count
+        # pattern = re.compile(keyword_conv, re.IGNORECASE)
+        pattern=re.escape(keyword_conv)
 
-            #matchオブジェクト計算
-            chapter_names=chapter_names_str.split('ΦΦΦΦΦ')
-            chapter_texts=text.split('ΦΦΦΦΦ')
-            chapter_texts_conv=text_conv.split('ΦΦΦΦΦ')
+        if (chapter_names_str):
+            chapter_names = chapter_names_str.split('ΦΦΦΦΦ')
+            chapter_texts = text.split('ΦΦΦΦΦ')
+            chapter_texts_conv = text_conv.split('ΦΦΦΦΦ')
 
-            if(len(chapter_names)!=len(chapter_texts)):
-                # myprint('チャプターの数とチャプタータイトルの数が一致しません.')
-                chapter_names=['サンプルAI書き起こし' for _ in chapter_texts]
+            if len(chapter_names) != len(chapter_texts):
+                chapter_names = ['サンプルAI書き起こし' for _ in chapter_texts]
 
-            num_chap=int(len(chapter_names))
-            selector_list=random.sample(range(num_chap),k=num_chap)
+            num_chap = len(chapter_names)
+            selector_list = random.sample(range(num_chap), k=num_chap)
+
             for selector in selector_list:
-                match=re.finditer(keyword_xjoined,chapter_texts_conv[selector],re.IGNORECASE)
-                match1, match2=itertools.tee(match,2)
-                # if(match):
-                hit_count_chapter=len(list(match2))
-                if(hit_count_chapter!=0):
-                    return match1,hit_count,chapter_names[selector],chapter_texts[selector],selector
-            # myprint('hit_count=0 2')
-            return '',hit_count,'','',-1
-        else:
-            match=re.finditer(keyword_xjoined,text_conv,re.IGNORECASE)
-            match1, match2=itertools.tee(match,2)
-            hit_count=len( list(match1) )
-            return match2,hit_count,'',text,0
+                matches = list(re.finditer(pattern,chapter_texts_conv[selector]))
+                chapter_text=chapter_texts[selector]
+                chapter_name=chapter_names[selector]
+                if matches:
+                    break
+            
+            if(matches):
+                match=random.choice(matches)
+                match_text_fh,match_text_c,match_text_lh=self.adjust_letter_divide(chapter_text,match.start(),match.end(),display_range)
 
-    def explore_two_step(self,keyword,record):
-        match,hit_count,_,__,chapter_num=self.explore_keyword(keyword,'',record.maintext_conv)
-        if(hit_count==0):
-            match,hit_count,_,__,chapter_num=self.explore_keyword(keyword,'',record.description_conv)
-        return hit_count
-    def rand_match_obj(self,match_iter):
-        count=0
-        now=datetime.datetime.today()
-        match1, match2=itertools.tee(match_iter,2)
-        hit_count=len(list(match2))
-        if(hit_count!=0):
-            rand_min=int( int(now.minute*977)%int(hit_count) )
-        for m in match1:
-            if(count==rand_min):
-                return m
-            count+=1
-        return False
+                return match_text_fh,match_text_c,match_text_lh,chapter_name,len(matches)
+
+
+            return '','','','',0
+
+        else:
+            return '','','','',0
 
     def get_circle_id(self,name):
         try:
@@ -734,10 +478,6 @@ class WorkInfoSearch:
         except ObjectDoesNotExist:
             query=ScenarioWriterModel.objects.filter(scenario_writer__icontains=name)
             return [q.id for q in query]
-    def get_xjoined_keyword(self,keyword):
-        # keywordのメタ文字はエスケープされたものを入力する
-        return keyword
-        # return (self.Xjoin_char).join( re.findall(r'\\?.',keyword) )
 
     def search_from_memo(self,memo_Base64):
         # そのうち廃止する
@@ -928,5 +668,4 @@ class SearchInfo:
         else:
             sample=False
         return sample
-
 

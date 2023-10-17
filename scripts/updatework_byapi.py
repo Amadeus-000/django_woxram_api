@@ -30,19 +30,19 @@ def send_gmail(gmail_account, gmail_password, to_email, subject, body):
     server.quit()
 
 def run():
-    queryset=VoiceDataModel.objects.filter(id__range=(1716, 2000))
-    # queryset=VoiceDataModel.objects.filter(id=17)
+    queryset=VoiceDataModel.objects.filter(id__range=(7000, 10000))
+    # queryset=VoiceDataModel.objects.filter(id=2000)
     fail_ids=[]
 
     for record in queryset:
-        time.sleep(3)
+        time.sleep(5)
         print('@@@@@@@@@@@@@@@@@@@@@@@')
         if(record.text_version!="posted_script"):
             with open('tmp/update_work_history.txt','a',encoding='utf-8') as f:
                 f.write('id:{0} date:{1}\n'.format(record.id,datetime.datetime.now()))
             work_id=record.work_id.split('x')[0]
             print('id:{0} work_id:{1} をを更新作業中'.format(record.id,work_id))
-            url='http://localhost:8080/api/transcript/getdlsite?work_id={0}'.format(work_id)
+            url='http://133.130.96.237/api/transcript/getdlsite2/?work_id={0}'.format(work_id)
             print(url+'にアクセス開始')
             try:
                 response=requests.get(url).json()
